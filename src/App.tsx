@@ -1,21 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Copy, Moon, Sun, Sparkles, Image, MessageCircle, Briefcase, Check, RotateCcw, History, X, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Copy, Moon, Sun, Image, MessageCircle, Briefcase, Check, RotateCcw, History, X, Clock, Zap } from 'lucide-react';
+
+// Type definitions
+type CategoryKey = 'imagen' | 'conversacional' | 'proyecto';
+
+interface Field {
+  key: string;
+  label: string;
+  placeholder: string;
+}
+
+interface Category {
+  title: string;
+  icon: React.ComponentType<{ size?: number }>;
+  fields: Field[];
+}
+
+interface Categories {
+  imagen: Category;
+  conversacional: Category;
+  proyecto: Category;
+}
+
+interface FormData {
+  imagen: Record<string, string>;
+  conversacional: Record<string, string>;
+  proyecto: Record<string, string>;
+}
+
+interface HistoryEntry {
+  id: number;
+  category: CategoryKey;
+  categoryTitle: string;
+  prompt: string;
+  timestamp: string;
+}
 
 const PromptMaster = () => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [activeCategory, setActiveCategory] = useState('imagen');
-  const [formData, setFormData] = useState({
+  const [darkMode, setDarkMode] = useState<boolean>(false);
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>('imagen');
+  const [formData, setFormData] = useState<FormData>({
     imagen: {},
     conversacional: {},
     proyecto: {}
   });
-  const [generatedPrompt, setGeneratedPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
-  const [promptHistory, setPromptHistory] = useState([]);
+  const [generatedPrompt, setGeneratedPrompt] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [copied, setCopied] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [promptHistory, setPromptHistory] = useState<HistoryEntry[]>([]);
 
-  const categories = {
+  const categories: Categories = {
     imagen: {
       title: 'Imagen/Video',
       icon: Image,
@@ -30,7 +65,7 @@ const PromptMaster = () => {
       ]
     },
     conversacional: {
-      title: 'Consulta Conversacional',
+      title: 'Consulta',
       icon: MessageCircle,
       fields: [
         { key: 'rol', label: 'Actúa como...', placeholder: 'Experto en SEO, psicólogo, historiador, coach...' },
@@ -42,7 +77,7 @@ const PromptMaster = () => {
       ]
     },
     proyecto: {
-      title: 'Proyecto Específico',
+      title: 'Proyecto',
       icon: Briefcase,
       fields: [
         { key: 'tipo', label: 'Tipo de entrega', placeholder: 'Informe, análisis, guion, descripción de producto...' },
@@ -66,14 +101,14 @@ const PromptMaster = () => {
     }
     if (savedFormData) {
       try {
-        setFormData(JSON.parse(savedFormData));
+        setFormData(JSON.parse(savedFormData) as FormData);
       } catch (e) {
         console.error('Error loading form data:', e);
       }
     }
     if (savedHistory) {
       try {
-        setPromptHistory(JSON.parse(savedHistory));
+        setPromptHistory(JSON.parse(savedHistory) as HistoryEntry[]);
       } catch (e) {
         console.error('Error loading history:', e);
       }
@@ -95,13 +130,13 @@ const PromptMaster = () => {
     localStorage.setItem('promptmaster-history', JSON.stringify(promptHistory));
   }, [promptHistory]);
 
-  const generatePrompt = async () => {
+  const generatePrompt = async (): Promise<void> => {
     setIsGenerating(true);
     const currentFields = categories[activeCategory].fields;
     const currentFormData = formData[activeCategory];
     const filledData = currentFields
-      .filter(field => currentFormData[field.key]?.trim())
-      .map(field => ({
+      .filter((field: Field) => currentFormData[field.key]?.trim())
+      .map((field: Field) => ({
         label: field.label,
         value: currentFormData[field.key]
       }));
@@ -119,7 +154,7 @@ const PromptMaster = () => {
             role: 'user',
             content: `Eres un experto en ingeniería de prompts. Tu tarea es crear un prompt profesional y optimizado basado en la siguiente información de categoría "${categories[activeCategory].title}":
 
-${filledData.map(item => `${item.label}: ${item.value}`).join('\n')}
+${filledData.map((item: { label: string; value: string }) => `${item.label}: ${item.value}`).join('\n')}
 
 Genera un prompt completo, profesional y bien estructurado que incorpore toda esta información de manera coherente. El prompt debe ser claro, específico y optimizado para obtener los mejores resultados de IA.
 
@@ -136,7 +171,7 @@ IMPORTANTE:
       setGeneratedPrompt(prompt);
       
       // Add to history
-      const historyEntry = {
+      const historyEntry: HistoryEntry = {
         id: Date.now(),
         category: activeCategory,
         categoryTitle: categories[activeCategory].title,
@@ -150,7 +185,7 @@ IMPORTANTE:
         })
       };
       
-      setPromptHistory(prev => [historyEntry, ...prev.slice(0, 9)]); // Keep last 10
+      setPromptHistory((prev: HistoryEntry[]) => [historyEntry, ...prev.slice(0, 9)]); // Keep last 10
       
     } catch (error) {
       console.error('Error generating prompt:', error);
@@ -160,7 +195,7 @@ IMPORTANTE:
     setIsGenerating(false);
   };
 
-  const copyToClipboard = async (text = generatedPrompt) => {
+  const copyToClipboard = async (text: string = generatedPrompt): Promise<void> => {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -170,8 +205,8 @@ IMPORTANTE:
     }
   };
 
-  const handleInputChange = (key, value) => {
-    setFormData(prev => ({
+  const handleInputChange = (key: string, value: string): void => {
+    setFormData((prev: FormData) => ({
       ...prev,
       [activeCategory]: {
         ...prev[activeCategory],
@@ -180,22 +215,22 @@ IMPORTANTE:
     }));
   };
 
-  const resetCurrentCategory = () => {
-    setFormData(prev => ({
+  const resetCurrentCategory = (): void => {
+    setFormData((prev: FormData) => ({
       ...prev,
       [activeCategory]: {}
     }));
   };
 
-  const restoreFromHistory = (prompt) => {
+  const restoreFromHistory = (prompt: string): void => {
     setGeneratedPrompt(prompt);
     setShowHistory(false);
   };
 
-  const isFormValid = () => {
+  const isFormValid = (): boolean => {
     const currentFormData = formData[activeCategory];
     const currentFields = categories[activeCategory].fields;
-    return currentFields.some(field => currentFormData?.[field.key]?.trim());
+    return currentFields.some((field: Field) => currentFormData?.[field.key]?.trim());
   };
 
   const HistoryModal = () => (
@@ -223,7 +258,7 @@ IMPORTANTE:
               No hay prompts en el historial aún
             </p>
           ) : (
-            promptHistory.map((entry) => (
+            promptHistory.map((entry: HistoryEntry) => (
               <div key={entry.id} className={`p-4 rounded-xl border ${
                 darkMode ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
               }`}>
@@ -273,6 +308,11 @@ IMPORTANTE:
     </div>
   );
 
+  // Set document title
+  useEffect(() => {
+    document.title = 'Prompt Master';
+  }, []);
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
       <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -280,7 +320,7 @@ IMPORTANTE:
         <div className="flex justify-between items-center mb-8">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-blue-600 text-white">
-              <Sparkles size={24} />
+              <Zap size={24} />
             </div>
             <div>
               <h1 className={`text-3xl font-bold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
@@ -319,7 +359,7 @@ IMPORTANTE:
         {/* Category Selector */}
         <div className="mb-8">
           <div className="flex flex-wrap gap-2">
-            {Object.entries(categories).map(([key, category]) => {
+            {(Object.entries(categories) as [CategoryKey, Category][]).map(([key, category]) => {
               const Icon = category.icon;
               return (
                 <button
@@ -350,16 +390,16 @@ IMPORTANTE:
           </h2>
           
           <div className="space-y-6">
-            {categories[activeCategory].fields.map((field) => (
+            {categories[activeCategory].fields.map((field: Field) => (
               <div key={field.key}>
-                <label className={`block text-sm font-medium mb-2 ${
+                <label className={`block text-base font-medium mb-2 ${
                   darkMode ? 'text-gray-300' : 'text-gray-700'
                 }`}>
                   {field.label}
                 </label>
                 <textarea
                   value={formData[activeCategory]?.[field.key] || ''}
-                  onChange={(e) => handleInputChange(field.key, e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleInputChange(field.key, e.target.value)}
                   placeholder={field.placeholder}
                   rows={field.key === 'consideraciones' ? 2 : 3}
                   className={`w-full p-3 rounded-xl border transition-colors resize-none ${
@@ -391,7 +431,7 @@ IMPORTANTE:
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Sparkles size={20} />
+                <Zap size={20} />
                 Redactar Prompt
               </div>
             )}
@@ -436,12 +476,12 @@ IMPORTANTE:
             </div>
             <textarea
               value={generatedPrompt}
-              onChange={(e) => setGeneratedPrompt(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setGeneratedPrompt(e.target.value)}
               className={`w-full p-4 rounded-xl border transition-colors resize-none ${
                 darkMode
                   ? 'bg-gray-700 border-gray-600 text-white'
                   : 'bg-gray-50 border-gray-200 text-gray-900'
-              } focus:outline-none focus:ring-2 focus:ring-purple-500/20`}
+              } focus:outline-none focus:ring-2 focus:ring-blue-500/20`}
               rows={8}
             />
           </div>
